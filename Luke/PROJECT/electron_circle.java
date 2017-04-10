@@ -33,15 +33,15 @@ class electron_circle
     static double [] [] detector_positions = new double [2] [464]; // where [0][] is x and [1][] is y  , this is for each of the 9 detectors
     static double [] electron_X;
     static double [] electron_Y;
-    static int nmax = 2000;
-    static int H;
+    static int nmax = 20000;
     static double [] [] Hit;
-      
+    static double [] [] HitEnd = new double [2] [10];
+    
     private static double [] [] Detector_hit() {       
-        double [] a = {radius-0.08,radius-0.08,radius-0.12,radius-0.12,radius-0.12,radius-0.16,radius-0.16,radius-0.16,radius-0.16}; 
+        double [] a = {radius-0.085,radius-0.085,radius-0.125,radius-0.125,radius-0.125,radius-0.165,radius-0.165,radius-0.165,radius-0.165}; 
         double [] detector_angle = new double [3];        
         detector_angle1 = (15*Math.PI)/180;
-        double []  width = {0.06,0.06,0.10,0.10,0.10,0.14,0.14,0.14,0.14};
+        double []  width = {0.08,0.08,0.12,0.12,0.12,0.16,0.16,0.16,0.16};
            
          for (int n = 0; n <= 1; n++) {
             double real_angle = detector_angle1 - ((0.09*n)/a [n]);
@@ -68,6 +68,19 @@ class electron_circle
         return detector_positions;
     }    
     
+    private static void WriteToElectron() throws IOException {
+        FileWriter file = new FileWriter("Electron.csv");  
+        PrintWriter outputFile = new PrintWriter("Electron.csv");
+       
+        for (int n = 0; n < nmax; n++) {             
+        outputFile.println((n+1) + "," + electron_X [n] + "," + electron_Y [n]);
+        }
+       
+       outputFile.close();
+       screen.println("Data written to disk in file " + "Electron.csv");
+       return;
+    }
+    
     private static void WriteToDetectors() throws IOException {
         FileWriter file = new FileWriter("detector.csv");  
         PrintWriter outputFile = new PrintWriter("detector.csv");
@@ -83,6 +96,7 @@ class electron_circle
        return;
     }
     
+    
       public static void main (String [] args) throws IOException
     {
     FileWriter file = new FileWriter("HITS.csv");  
@@ -90,55 +104,72 @@ class electron_circle
     
     electron_X = new double [nmax];
     electron_Y = new double [nmax];
-    H = 0;
-    Hit = new double [2] [H+1];
+    
+    
     
     double angle = 22;
-        finalX = radius*Math.cos((angle*Math.PI)/180);
-        finalY = radius*Math.sin((angle*Math.PI)/180); //decided to decay at 16 degrees
+    finalX = radius*Math.cos((angle*Math.PI)/180);
+    finalY = radius*Math.sin((angle*Math.PI)/180); //decided to decay at 16 degrees
         
-        double electron_energy = muon_energy*0.7; //for now, this will be chnaged
-        double electron_momentum = Math.sqrt(Math.pow(electron_energy,2) - Math.pow(electron_mass,2));
-        double electron_lorentz = electron_energy/electron_mass;
-        double electron_path_radius = ((electron_momentum*electron_charge*1E6)/c)/(magnetic_field*electron_charge); //without use of lorentz as lorentz is very high
-        double electron_radiusdifference = radius - electron_path_radius;
-        double electron_pathcentre_x = electron_radiusdifference*Math.cos((angle*Math.PI)/180);
-        double electron_pathcentre_y = electron_radiusdifference*Math.sin((angle*Math.PI)/180);
-        Detector_hit();       
-        boolean hit1;
-        boolean hit2;
-        
-        for (int n=0; n < nmax; n++) {
-            hit1 = false;
-            hit2 = false;
+    double electron_energy = muon_energy*0.7; //for now, this will be chnaged
+    double electron_momentum = Math.sqrt(Math.pow(electron_energy,2) - Math.pow(electron_mass,2));
+    double electron_lorentz = electron_energy/electron_mass;
+    double electron_path_radius = ((electron_momentum*electron_charge*1E6)/c)/(magnetic_field*electron_charge); //without use of lorentz as lorentz is very high
+    double electron_radiusdifference = radius - electron_path_radius;
+    double electron_pathcentre_x = electron_radiusdifference*Math.cos((angle*Math.PI)/180);
+    double electron_pathcentre_y = electron_radiusdifference*Math.sin((angle*Math.PI)/180);
+    Detector_hit();       
+    boolean hit1;
+    boolean hit2;
+    int H = 0;   
+    Hit = new double [2] [H+1];
+    int P = 1;
+    for (int n=0; n < nmax; n++) {
+       electron_X [n] = electron_path_radius*Math.cos((((double)n*45/(double)nmax)*Math.PI)/180) + electron_pathcentre_x;
+       electron_Y [n] = electron_path_radius*Math.sin((((double)n*45/(double)nmax)*Math.PI)/180) + electron_pathcentre_y;
+       for (int L = 0; L < 464; L++) {
             
-            electron_X [n] = electron_path_radius*Math.cos((((double)n*360/(double)nmax)*Math.PI)/180) + electron_pathcentre_x;
-            electron_Y [n] = electron_path_radius*Math.sin((((double)n*360/(double)nmax)*Math.PI)/180) + electron_pathcentre_y;
-            for (int L = 0; L < 464; L++) {
-            if (electron_X [n] <= (detector_positions [0] [L] + 0.01) && electron_X [n] >= (detector_positions [0] [L] - 0.01)){
-                hit1 = true;                
+            if (electron_X [n] <= (detector_positions [0] [L] + 0.001) && electron_X [n] >= (detector_positions [0] [L] - 0.001)){
+                hit1 = true;                             
             }
-            if (electron_Y [n] <= (detector_positions [1] [L] + 0.01) && electron_Y [n] >= (detector_positions [1] [L] - 0.01)){
-                hit2 = true;                 
+            else {
+                hit1 = false;
+            }
+            if (electron_Y [n] <= (detector_positions [1] [L] + 0.001) && electron_Y [n] >= (detector_positions [1] [L] - 0.001)){
+                hit2 = true;                                
+            }
+            else {
+                hit2 = false;
             }
             if (hit1 == true && hit2 == true){
-                Hit [0][H] = electron_X [n];
-                Hit [1][H] = electron_Y [n];
-                outputFile.println((H+1) + "," + Hit [0][H] + "," + Hit [1][H]);
-                H++;                
+                Hit [0][H] = detector_positions [0] [L];
+                Hit [1][H] = detector_positions [1] [L];                
+                if (H == 0){
+                    HitEnd [0] [0] = Hit [0][0];
+                    HitEnd [1] [0] = Hit [1][0];
+                    outputFile.println((1) + "," + HitEnd [0][0] + "," + HitEnd [1][0]);
+                }
+                if (H > 0){                    
+                    if (Hit [0] [H-1] != Hit [0][H] && Hit [1][H-1] != Hit [1][H]) {  
+                     HitEnd [0] [P] = Hit [0][H];
+                     HitEnd [1] [P] = Hit [1][H];
+                     if (HitEnd [0][P] != HitEnd [0][P-1] && HitEnd [1][P] != HitEnd [1][P-1]){
+                     outputFile.println((P+1) + "," + HitEnd [0][P] + "," + HitEnd [1][P]);                        
+                     P++;
+                    }
+                  }
+                }
+                 H++;                
             }
-            
-            Hit = new double [2] [H+1];
-           }
-            
-        }
-        
-        
+            Hit = new double [2] [H+1];    
+       }            
+    }
     
-    
-    
+   
+   
     WriteToDetectors();
-     
+    WriteToElectron();
+       
     
     outputFile.close();
     screen.println("Data written to disk in file " + "HITS.csv");
