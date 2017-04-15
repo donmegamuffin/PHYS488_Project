@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.Random;
-import java.util.Arrays; 
+import java.util.Arrays;
+import java.util.stream.*; 
 
 // 2D tracking of a high energy muon through iron with no magnetic field
 class electron_circle
@@ -23,17 +24,19 @@ class electron_circle
     static final double circumference = 2*Math.PI*radius;
     static final double speed = c*Math.sqrt(1-(1/Math.pow(magic_momentum,2)));
     static final double electron_mass = 0.5109989461; //MeV   
-     static final double electron_charge = 1.6021766208E-19;
+    static final double electron_charge = 1.6021766208E-19;
     static double finalX;
     static double finalY;
         
     static double detector_angle1 = (15*Math.PI)/180;
     static double detector_angle2 = (180*Math.PI)/180;
     static double detector_angle3 = (270*Math.PI)/180;
-    static double [] [] detector_positions = new double [2] [464]; // where [0][] is x and [1][] is y  , this is for each of the 9 detectors
+    static double [] [] detector_positions = new double [2] [928]; // where [0][] is x and [1][] is y  , this is for each of the 9 detectors
     static double [] electron_X;
     static double [] electron_Y;
-    static int nmax = 20000;
+    static double [] predicted_electron_X;
+    static double [] predicted_electron_Y;
+    static int nmax = 10000;
     static double [] [] Hit;
     static double [] [] HitEnd = new double [2] [10];
     
@@ -45,23 +48,23 @@ class electron_circle
            
          for (int n = 0; n <= 1; n++) {
             double real_angle = detector_angle1 - ((0.09*n)/a [n]);
-            for (int i = 0; i <= 31; i++) {
-              detector_positions [0] [i+32*n] = ((a [n])+((i)*(width [n]/31)))*Math.cos(real_angle);
-              detector_positions [1] [i+32*n] = ((a [n])+((i)*(width [n]/31)))*Math.sin(real_angle);
+            for (int i = 0; i <= 63; i++) {
+              detector_positions [0] [i+64*n] = ((a [n])+((i)*(width [n]/63)))*Math.cos(real_angle);
+              detector_positions [1] [i+64*n] = ((a [n])+((i)*(width [n]/63)))*Math.sin(real_angle);
             }
         }        
          for (int n = 2; n <= 4; n++) {
             double real_angle = detector_angle1 - ((0.09*n)/a [n]);
-            for (int i = 0; i <= 47; i++) {
-              detector_positions [0] [i+32*2+48*(n-2)] = ((a [n])+((i)*(width [n]/47)))*Math.cos(real_angle);
-              detector_positions [1] [i+32*2+48*(n-2)] = ((a [n])+((i)*(width [n]/47)))*Math.sin(real_angle);
+            for (int i = 0; i <= 95; i++) {
+              detector_positions [0] [i+64*2+96*(n-2)] = ((a [n])+((i)*(width [n]/95)))*Math.cos(real_angle);
+              detector_positions [1] [i+64*2+96*(n-2)] = ((a [n])+((i)*(width [n]/95)))*Math.sin(real_angle);
             }
         }  
          for (int n = 5; n <= 8; n++) {
             double real_angle = detector_angle1 - ((0.09*n)/a [n]);
-            for (int i = 0; i <= 63; i++) {
-              detector_positions [0] [i+32*2+48*3+64*(n-5)] = ((a [n])+((i)*(width [n]/63)))*Math.cos(real_angle);
-              detector_positions [1] [i+32*2+48*3+64*(n-5)] = ((a [n])+((i)*(width [n]/63)))*Math.sin(real_angle);
+            for (int i = 0; i <= 127; i++) {
+              detector_positions [0] [i+64*2+96*3+128*(n-5)] = ((a [n])+((i)*(width [n]/127)))*Math.cos(real_angle);
+              detector_positions [1] [i+64*2+96*3+128*(n-5)] = ((a [n])+((i)*(width [n]/127)))*Math.sin(real_angle);
             }
         }  
         //all dots have an error of 0.01m
@@ -87,7 +90,7 @@ class electron_circle
         
         Detector_hit();
          
-        for (int n = 0; n < 464; n++) {             
+        for (int n = 0; n < 928; n++) {             
         outputFile.println((n+1) + "," + detector_positions [0][n] + "," + detector_positions [1][n]);
         }
                
@@ -105,8 +108,6 @@ class electron_circle
     electron_X = new double [nmax];
     electron_Y = new double [nmax];
     
-    
-    
     double angle = 22;
     finalX = radius*Math.cos((angle*Math.PI)/180);
     finalY = radius*Math.sin((angle*Math.PI)/180); //decided to decay at 16 degrees
@@ -122,20 +123,20 @@ class electron_circle
     boolean hit1;
     boolean hit2;
     int H = 0;   
-    Hit = new double [2] [H+1];
+    Hit = new double [2] [500];
     int P = 1;
     for (int n=0; n < nmax; n++) {
-       electron_X [n] = electron_path_radius*Math.cos((((double)n*45/(double)nmax)*Math.PI)/180) + electron_pathcentre_x;
-       electron_Y [n] = electron_path_radius*Math.sin((((double)n*45/(double)nmax)*Math.PI)/180) + electron_pathcentre_y;
-       for (int L = 0; L < 464; L++) {
+       electron_X [n] = electron_path_radius*Math.cos(((3+(double)n*10/nmax)*Math.PI)/180) + electron_pathcentre_x;
+       electron_Y [n] = electron_path_radius*Math.sin(((3+(double)n*10/nmax)*Math.PI)/180) + electron_pathcentre_y;
+       for (int L = 0; L < 928; L++) {
             
-            if (electron_X [n] <= (detector_positions [0] [L] + 0.001) && electron_X [n] >= (detector_positions [0] [L] - 0.001)){
+            if (electron_X [n] <= (detector_positions [0] [L] + 0.0005) && electron_X [n] >= (detector_positions [0] [L] - 0.0005)){
                 hit1 = true;                             
             }
             else {
                 hit1 = false;
             }
-            if (electron_Y [n] <= (detector_positions [1] [L] + 0.001) && electron_Y [n] >= (detector_positions [1] [L] - 0.001)){
+            if (electron_Y [n] <= (detector_positions [1] [L] + 0.0005) && electron_Y [n] >= (detector_positions [1] [L] - 0.0005)){
                 hit2 = true;                                
             }
             else {
@@ -147,26 +148,113 @@ class electron_circle
                 if (H == 0){
                     HitEnd [0] [0] = Hit [0][0];
                     HitEnd [1] [0] = Hit [1][0];
-                    outputFile.println((1) + "," + HitEnd [0][0] + "," + HitEnd [1][0]);
+                    
                 }
                 if (H > 0){                    
                     if (Hit [0] [H-1] != Hit [0][H] && Hit [1][H-1] != Hit [1][H]) {  
                      HitEnd [0] [P] = Hit [0][H];
                      HitEnd [1] [P] = Hit [1][H];
                      if (HitEnd [0][P] != HitEnd [0][P-1] && HitEnd [1][P] != HitEnd [1][P-1]){
-                     outputFile.println((P+1) + "," + HitEnd [0][P] + "," + HitEnd [1][P]);                        
+                                            
                      P++;
                     }
                   }
                 }
                  H++;                
-            }
-            Hit = new double [2] [H+1];    
+            }            
        }            
     }
     
-   
-   
+    screen.println("The electron energy is " + electron_energy + " MeV");
+    
+    //using energy and time that the detectors detected I can work back and find the time and place it decayed from
+    //electron_pathradius can be found from the energy and so the angle at which it decayed can be found
+    
+    double [] a_predicted_angle = new double [36];
+    double [] mid_point = new double [2];
+    double [] path_centre = new double [2];
+    double [][] every_path_centre = new double [2][36];
+    int l = 0;     
+    int o = 0;
+    int p = 0;
+    double total = 0;
+    for (int n=0; n < 36; n++) {
+        if (n <= 7){          
+          o = n;
+        }
+        if (n >= 8 && n <= 14) {
+          l = 1;
+          o = n - 8;
+          p = 8;
+        }
+        if (n >= 15 && n <= 20) {
+          l = 2;
+          o = n - 15;
+          p = 15;
+        }      
+        if (n >= 21 && n <= 25) {
+          l = 3;
+          o = n - 21;
+          p = 21;
+        }    
+        if (n >= 26 && n <= 29) {
+          l = 4;
+          o = n - 26;
+          p = 26;
+        }   
+        if (n >= 30 && n <= 32) {
+          l = 5;
+          o = n - 30;
+          p = 30;
+        }    
+        if (n >= 33 && n <= 34) {
+          l = 6;
+          o = n - 33;
+          p = 33;
+        }         
+        if (n == 35) {
+          l = 7;
+          o = n - 35;
+          p = 35;
+        } 
+        
+        double AB = Math.sqrt(Math.pow(HitEnd [0] [0+l] - HitEnd [0] [8-o],2) + Math.pow(HitEnd [1] [0+l] - HitEnd [1] [8-o],2));                
+        double a_mid_point = Math.sqrt(Math.pow(electron_path_radius,2) - Math.pow(AB/2,2));
+        double m_mid_point = (HitEnd [0] [0+l] - HitEnd [0] [8-o])/(HitEnd [1] [8-o] - HitEnd [1] [0+l]);
+        
+        mid_point [0] = (HitEnd [0] [0+l] + HitEnd [0] [8-o])/2;
+        mid_point [1] = (HitEnd [1] [0+l] + HitEnd [1] [8-o])/2;    
+        
+        path_centre [0] = mid_point [0] - a_mid_point / Math.sqrt(1 + Math.pow(m_mid_point,2));
+        path_centre [1] = mid_point [1] - (m_mid_point*a_mid_point) / Math.sqrt(1 + Math.pow(m_mid_point,2));
+        
+        every_path_centre [0][o+p] = path_centre [0];
+        every_path_centre [1][o+p] = path_centre [1];
+        
+        a_predicted_angle [o+p] = Math.atan2(path_centre [1]/electron_radiusdifference,path_centre [0]/electron_radiusdifference)*180/Math.PI;
+        
+    }
+    
+    double average_predicted_angle = DoubleStream.of(a_predicted_angle).sum()/36; 
+    double average_every_path_centre_x = DoubleStream.of(every_path_centre [0]).sum()/36; 
+    double average_every_path_centre_y = DoubleStream.of(every_path_centre [1]).sum()/36; 
+    screen.println(average_predicted_angle);
+    screen.println(electron_pathcentre_x + "   " + electron_pathcentre_y  + "   " +  average_every_path_centre_x  + "   " +  average_every_path_centre_y);
+    
+    double electron_speed = c*Math.sqrt(1-( Math.pow(electron_mass,2)/Math.pow(electron_energy,2) ));
+    double [] time = new double [9];
+    double [] hit_angle = new double [9];
+    for (int n=0; n < 9; n++) {
+        hit_angle [n] = Math.atan2( HitEnd[1][n] , HitEnd[0][n] );
+        double distance_from_decay = Math.abs( electron_path_radius * (hit_angle [n] - 22) );
+        time [n] = distance_from_decay / electron_speed;
+    }
+    outputFile.println(1 + "," + "x Axis" + "," + "y Axis" + "," + "Time since creation");
+    outputFile.println(1 + "," + HitEnd [0][0] + "," + HitEnd [1][0] + "," + time [0]);
+    for (int n=1; n < P; n++) {
+        outputFile.println((n+1) + "," + HitEnd [0][n] + "," + HitEnd [1][n] + "," + time [n]); 
+    }
+    
     WriteToDetectors();
     WriteToElectron();
        
