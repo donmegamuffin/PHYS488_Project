@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.stream.*; 
 
 // 2D tracking of a high energy muon through iron with no magnetic field
-class electron_circle
+class h
 {
     static BufferedReader keyboard = new BufferedReader (new InputStreamReader(System.in)) ;
     static PrintWriter screen = new PrintWriter( System.out, true);
@@ -124,15 +124,13 @@ class electron_circle
     boolean hit2;
     int H = 0;   
     Hit = new double [2] [500];
-    double [][][] HitMid = new double [9] [2] [500];
-    HitEnd = new double [2] [9];
+    HitEnd = new double [2] [10];
     int P = 1;
-    int F = 0;
-    int s = 0;
     for (int n=0; n < nmax; n++) {
        electron_X [n] = electron_path_radius*Math.cos(((3+(double)n*10/nmax)*Math.PI)/180) + electron_pathcentre_x;
        electron_Y [n] = electron_path_radius*Math.sin(((3+(double)n*10/nmax)*Math.PI)/180) + electron_pathcentre_y;
-       for (int L = 0; L < 928; L++) {            
+       for (int L = 0; L < 928; L++) {
+            
             if (electron_X [n] <= (detector_positions [0] [L] + 0.0005) && electron_X [n] >= (detector_positions [0] [L] - 0.0005)){
                 hit1 = true;                             
             }
@@ -148,62 +146,23 @@ class electron_circle
             if (hit1 == true && hit2 == true){
                 Hit [0][H] = electron_X [n];
                 Hit [1][H] = electron_Y [n];
-                if (L <= 63){
-                    s = 0;
-                }
-                if (L >= 64 && L <= 127){
-                    s = 1;
-                }
-                if (L >= 128 && L <= 223){
-                    s = 2;
-                }
-                if (L >= 224 && L <= 319){
-                    s = 3;
-                }
-                if (L >= 320 && L <= 415){
-                    s = 4;
-                }
-                if (L >= 416 && L <= 543){
-                    s = 5;
-                }
-                if (L >= 544 && L <= 671){
-                    s = 6;
-                }
-                if (L >= 672 && L <= 799){
-                    s = 7;
-                }
-                if (L >= 800 && L <= 927){
-                    s = 8;
-                }
                 if (H == 0){
-                    HitMid [s][0][0] = Hit [0][0];
-                    HitMid [s][1][0] = Hit [1][0];
+                    HitEnd [0] [0] = Hit [0][0];
+                    HitEnd [1] [0] = Hit [1][0];
+                    
                 }
                 if (H > 0){                    
                     if (Hit [0] [H-1] != Hit [0][H] && Hit [1][H-1] != Hit [1][H]) {  
-                     if (F != s){
-                         P = 0;
-                     }
-                     F = s;
-                     HitMid [s][0][P] = Hit [0][H];
-                     HitMid [s][1][P] = Hit [1][H];
+                     HitEnd [0] [P] = Hit [0][H];
+                     HitEnd [1] [P] = Hit [1][H];
+                     if (HitEnd [0][P] != HitEnd [0][P-1] && HitEnd [1][P] != HitEnd [1][P-1]){                                            
                      P++;
+                    }
                   }
                 }
                  H++;                
             }            
        }            
-    }
-    double [][] sum = new double [2][9];    
-    for (int n=0; n < 9; n++) {
-        sum [0][n] = 0;
-        sum [1][n] = 0;
-        for (int i=0; i < 10; i++) {
-            sum [0][n] = sum [0][n] + HitMid [n][0][i];
-            sum [1][n] = sum [1][n] + HitMid [n][1][i];
-        }        
-        HitEnd [0][n] = sum [0][n] / 10;
-        HitEnd [1][n] = sum [1][n] / 10;
     }
     
     screen.println("The electron energy is " + electron_energy + " MeV");
@@ -283,7 +242,7 @@ class electron_circle
     screen.println(electron_pathcentre_x + "   " + electron_pathcentre_y  + "   " +  average_every_path_centre_x  + "   " +  average_every_path_centre_y);
     
     double electron_speed = c*Math.sqrt(1-( Math.pow(electron_mass,2)/Math.pow(electron_energy,2) ));
-    double [] time = new double [10];
+    double [] time = new double [9];
     double [] hit_angle = new double [9];
     for (int n=0; n < 9; n++) {
         hit_angle [n] = Math.atan2( HitEnd[1][n] , HitEnd[0][n] );
@@ -292,8 +251,8 @@ class electron_circle
     }
     outputFile.println(1 + "," + "x Axis" + "," + "y Axis" + "," + "Time since creation");
     outputFile.println(1 + "," + HitEnd [0][0] + "," + HitEnd [1][0] + "," + time [0]);
-    for (int n=1; n < 9; n++) {
-    outputFile.println((n+1) + "," + HitEnd [0][n] + "," + HitEnd [1][n] + "," + time [n]); 
+    for (int n=1; n < P; n++) {
+        outputFile.println((n+1) + "," + HitEnd [0][n] + "," + HitEnd [1][n] + "," + time [n]); 
     }
     
     WriteToDetectors();
