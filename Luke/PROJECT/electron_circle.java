@@ -36,7 +36,7 @@ class electron_circle
     static double [] electron_Y;
     static double [] predicted_electron_X;
     static double [] predicted_electron_Y;
-    static int nmax = 10000;
+    static int nmax = 100000;
     static double [] [] Hit;
     static double [] [] HitEnd;
     
@@ -123,15 +123,16 @@ class electron_circle
     boolean hit1;
     boolean hit2;
     int H = 0;   
-    Hit = new double [2] [500];
-    double [][][] HitMid = new double [9] [2] [500];
+    Hit = new double [2] [5000];
+    double [][][] HitMid = new double [9] [2] [5000];
     HitEnd = new double [2] [9];
     int P = 1;
     int F = 0;
     int s = 0;
+    int Max_P = 0;
     for (int n=0; n < nmax; n++) {
-       electron_X [n] = electron_path_radius*Math.cos(((3+(double)n*10/nmax)*Math.PI)/180) + electron_pathcentre_x;
-       electron_Y [n] = electron_path_radius*Math.sin(((3+(double)n*10/nmax)*Math.PI)/180) + electron_pathcentre_y;
+       electron_X [n] = electron_path_radius*Math.cos(((3+(double)n*15/nmax)*Math.PI)/180) + electron_pathcentre_x;
+       electron_Y [n] = electron_path_radius*Math.sin(((3+(double)n*15/nmax)*Math.PI)/180) + electron_pathcentre_y;
        for (int L = 0; L < 928; L++) {            
             if (electron_X [n] <= (detector_positions [0] [L] + 0.0005) && electron_X [n] >= (detector_positions [0] [L] - 0.0005)){
                 hit1 = true;                             
@@ -172,7 +173,7 @@ class electron_circle
                 if (L >= 672 && L <= 799){
                     s = 7;
                 }
-                if (L >= 800 && L <= 927){
+                if (L >= 800){
                     s = 8;
                 }
                 if (H == 0){
@@ -182,15 +183,18 @@ class electron_circle
                 if (H > 0){                    
                     if (Hit [0] [H-1] != Hit [0][H] && Hit [1][H-1] != Hit [1][H]) {  
                      if (F != s){
-                         P = 0;
+                         P = 0;                         
                      }
                      F = s;
                      HitMid [s][0][P] = Hit [0][H];
                      HitMid [s][1][P] = Hit [1][H];
-                     P++;
+                     if (Max_P < P){
+                         Max_P = P - 1;
+                     }
+                     P++;                     
                   }
-                }
-                 H++;                
+                }                
+                H++;                
             }            
        }            
     }
@@ -198,12 +202,12 @@ class electron_circle
     for (int n=0; n < 9; n++) {
         sum [0][n] = 0;
         sum [1][n] = 0;
-        for (int i=0; i < 10; i++) {
+        for (int i=0; i < Max_P; i++) {
             sum [0][n] = sum [0][n] + HitMid [n][0][i];
             sum [1][n] = sum [1][n] + HitMid [n][1][i];
         }        
-        HitEnd [0][n] = sum [0][n] / 10;
-        HitEnd [1][n] = sum [1][n] / 10;
+        HitEnd [0][n] = sum [0][n] / Max_P;
+        HitEnd [1][n] = sum [1][n] / Max_P;
     }
     
     screen.println("The electron energy is " + electron_energy + " MeV");
