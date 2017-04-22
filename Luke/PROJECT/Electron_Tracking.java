@@ -26,18 +26,15 @@ class Electron_Tracking
     static final double electron_charge = 1.6021766208E-19;
     
     static double finalX;
-    static double finalY;        
-    static double detector_angle1 = (15*Math.PI)/180;
-    static double detector_angle2 = (180*Math.PI)/180;
-    static double detector_angle3 = (270*Math.PI)/180;
+    static double finalY;      
     static double [] [] detector_positions = new double [2] [928]; // where [0][] is x and [1][] is y  , this is for each of the 9 detectors    
     static double [] predicted_electron_X;
     static double [] predicted_electron_Y;
     static int nmax = 100000;
-    static double [] [] Hit;
-    static double [] [] HitEnd;
-    static double [] electron_X;
-    static double [] electron_Y;
+    static double [] [] Hit = new double [2] [50000];
+    static double [] [] HitEnd = new double [2] [9];
+    static double [] electron_X = new double [nmax];
+    static double [] electron_Y = new double [nmax];
     static double [] time = new double [10];
     static double [] hit_angle = new double [9];
     static int [] Max_P = new int [9];
@@ -45,11 +42,29 @@ class Electron_Tracking
     static double [] mid_point = new double [2];
     static double [] path_centre = new double [2];
     static double [][] every_path_centre = new double [2][36];
+    static boolean hit1;
+    static boolean hit2;
+    static int H = 0;       
+    static double [][][] HitMid = new double [9] [2] [50000];
+    static int P = 0;    
+    static int F = 0;
+    static int s = 0;
+    
+    private static void WriteToCircle() throws IOException {
+        FileWriter file = new FileWriter("circle.csv");  
+        PrintWriter outputFile = new PrintWriter("circle.csv");         
+        for (int n = 0; n < 1000; n++) {             
+        outputFile.println((n+1) + "," + radius*Math.cos(2*n*Math.PI/999) + "," + radius*Math.sin(2*n*Math.PI/999));
+        }    
+       outputFile.close();
+       screen.println("Data written to disk in file " + "circle.csv");
+       return;
+    }
     
     private static double [] [] Detector_hit() {       
         double [] a = {radius-0.085,radius-0.085,radius-0.125,radius-0.125,radius-0.125,radius-0.165,radius-0.165,radius-0.165,radius-0.165}; 
         double [] detector_angle = new double [3];        
-        detector_angle1 = (15*Math.PI)/180;
+        double detector_angle1 = (15*Math.PI)/180;
         double []  width = {0.08,0.08,0.12,0.12,0.12,0.16,0.16,0.16,0.16};
            
          for (int n = 0; n <= 1; n++) {
@@ -129,31 +144,21 @@ class Electron_Tracking
     finalX = radius*Math.cos((angle*Math.PI)/180);
     finalY = radius*Math.sin((angle*Math.PI)/180); //decided to decay at 16 degrees
     
-   
-    electron_X = new double [nmax];
-    electron_Y = new double [nmax];
-    double electron_energy = muon_energy*0.7; //for now, this will be chnaged
+    double electron_energy = muon_energy*0.8; //for now, this will be chnaged
     double electron_momentum = Math.sqrt(Math.pow(electron_energy,2) - Math.pow(electron_mass,2));
     double electron_lorentz = electron_energy/electron_mass;
     double electron_path_radius = ((electron_momentum*electron_charge*1E6)/c)/(magnetic_field*electron_charge); //without use of lorentz as lorentz is very high
     double electron_radiusdifference = radius - electron_path_radius;
     double electron_pathcentre_x = electron_radiusdifference*Math.cos((angle*Math.PI)/180);
     double electron_pathcentre_y = electron_radiusdifference*Math.sin((angle*Math.PI)/180);
+    
     Detector_hit();       
-    boolean hit1;
-    boolean hit2;
-    int H = 0;   
-    Hit = new double [2] [50000];
-    double [][][] HitMid = new double [9] [2] [50000];
-    HitEnd = new double [2] [9];
-    int P = 0;    
-    int F = 0;
-    int s = 0;
+    
     
     
     for (int n=0; n < nmax; n++) {
-       electron_X [n] = electron_path_radius*Math.cos(((3+(double)n*15/nmax)*Math.PI)/180) + electron_pathcentre_x;
-       electron_Y [n] = electron_path_radius*Math.sin(((3+(double)n*15/nmax)*Math.PI)/180) + electron_pathcentre_y;
+       electron_X [n] = electron_path_radius*Math.cos((((double)n*15/nmax)*Math.PI)/180) + electron_pathcentre_x;
+       electron_Y [n] = electron_path_radius*Math.sin((((double)n*15/nmax)*Math.PI)/180) + electron_pathcentre_y;
        for (int L = 0; L < 928; L++) {            
             if (electron_X [n] <= (detector_positions [0] [L] + 0.0006) && electron_X [n] >= (detector_positions [0] [L] - 0.0006)){
                 hit1 = true;                             
@@ -233,7 +238,7 @@ class Electron_Tracking
         HitEnd [1][n] = sum [1][n] / Max_P [n];
     }
     
-    screen.println("The electron energy is " + electron_energy + " MeV");
+    screen.println("The electron energy is " + (float)electron_energy + " MeV");
     
     //using energy and time that the detectors detected I can work back and find the time and place it decayed from
     //electron_pathradius can be found from the energy and so the angle at which it decayed can be found
@@ -302,13 +307,12 @@ class Electron_Tracking
     average_predicted_angle = DoubleStream.of(a_predicted_angle).sum()/36; 
     double average_every_path_centre_x = DoubleStream.of(every_path_centre [0]).sum()/36; 
     double average_every_path_centre_y = DoubleStream.of(every_path_centre [1]).sum()/36; 
-    screen.println(average_predicted_angle);
-    screen.println(electron_pathcentre_x + "   " + electron_pathcentre_y  + "   " +  average_every_path_centre_x  + "   " +  average_every_path_centre_y);
+    screen.println("The angle the muon decayed at is predicted to be " + (float)average_predicted_angle + ("\u00B0"));
     
     double electron_speed = c*Math.sqrt(1-( Math.pow(electron_mass,2)/Math.pow(electron_energy,2) ));
     
     for (int n=0; n < 9; n++) {
-        hit_angle [n] = Math.atan2( HitEnd[1][n] , HitEnd[0][n] );
+        hit_angle [n] = Math.acos((HitEnd[0][n] - electron_pathcentre_x)/electron_path_radius);
         double distance_from_decay = Math.abs( electron_path_radius * (hit_angle [n] - 22) );
         time [n] = distance_from_decay / electron_speed;
     }
@@ -317,7 +321,7 @@ class Electron_Tracking
     WriteToDetectors();
     WriteToElectron();
     WriteToHits();
-    
+    WriteToCircle();
     }
     
 }

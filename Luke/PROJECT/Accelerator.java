@@ -74,7 +74,7 @@ class Accelerator
         finalX [i] = radius*Math.cos(distance_travelled/radius);
         finalY [i] = radius*Math.sin(distance_travelled/radius);
         finaltime [i] = lifetime;
-        double electron_energy = muon_energy *0.7; //for now, this will be chnaged
+        double electron_energy = muon_energy *0.6; //for now, this will be chnaged
         double electron_momentum = Math.sqrt(Math.pow(electron_energy,2) - Math.pow(electron_mass,2));        
         double electron_path_radius = ((electron_momentum*electron_charge*1E6)/c)/(magnetic_field*electron_charge); //without use of lorentz as lorentz is very high
         double electron_radiusdifference = radius - electron_path_radius;
